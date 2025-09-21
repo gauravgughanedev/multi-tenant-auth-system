@@ -1,389 +1,239 @@
-# 🔐 Multi-Tenant Authentication System
+Multi-Tenant Authentication System
+A secure, schema-isolated multi-tenant authentication system built with Spring Boot 3.5.5 and PostgreSQL. Supports email/password login with optional email-based OTP verification and uses Argon2 for modern password hashing.
 
-A robust multi-tenant authentication system built with Spring Boot 3.5.5 and PostgreSQL, featuring schema-based tenant isolation using Hibernate's multi-tenancy capabilities.
+Features
+Schema-per-Tenant Isolation: Each tenant operates in its own PostgreSQL schema
+Argon2 Password Hashing: Industry-leading password security
+Email + Password + OTP Auth: Optional second-factor verification via email
+Stateless Design: No cookies or sessions; tenant identified via HTTP header
+Dynamic Schema Creation: Schemas created automatically on first tenant access
+RESTful API: Well-defined endpoints for registration, login, and user management
+Header-Based Tenant Routing: Use X-Project-ID to route requests to correct tenant
+Prerequisites
+Java 17 or higher
+Maven 3.6+
+Docker (for PostgreSQL)
+IDE with Lombok support
+Quick Start
+1. Clone Repository
+bash
 
-## ✨ Features
 
-- **🏢 Multi-Tenant Architecture**: Schema-per-tenant isolation using Hibernate
-- **🔒 Secure Authentication**: BCrypt password encryption with Spring Security
-- **🌐 RESTful APIs**: Complete user management and authentication endpoints
-- **🚀 Auto Schema Creation**: Dynamic database schema creation per tenant
-- **📊 Tenant Isolation**: Complete data separation between projects/tenants
-- **⚡ Header-Based Routing**: Tenant identification via HTTP headers
-- **📝 Comprehensive Logging**: Debug-level logging for troubleshooting
-- **✅ Input Validation**: Jakarta validation with custom error messages
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Project A     │    │   Project B     │    │   Project C     │
-│   (Schema: A)   │    │   (Schema: B)   │    │   (Schema: C)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │  Application    │
-                    │  Layer          │
-                    └─────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │  PostgreSQL     │
-                    │  Database       │
-                    └─────────────────┘
-```
-
-## 🛠️ Tech Stack
-
-- **Framework**: Spring Boot 3.5.5
-- **Language**: Java 17
-- **Database**: PostgreSQL 15
-- **ORM**: Hibernate with Multi-Tenancy
-- **Security**: Spring Security 6
-- **Build Tool**: Maven
-- **Utilities**: Lombok, Jakarta Validation
-- **Containerization**: Docker (for PostgreSQL)
-
-## 📋 Prerequisites
-
-- Java 17 or higher
-- Maven 3.6+
-- Docker (for PostgreSQL)
-- IDE with Lombok support (IntelliJ IDEA, VS Code, Eclipse)
-
-## 🚀 Quick Start
-
-### 1. Clone the Repository
-
-```bash
+1
+2
 git clone https://github.com/yourusername/multitenant-auth.git
 cd multitenant-auth
-```
+2. Start PostgreSQL
+bash
 
-### 2. Start PostgreSQL Database
 
-```bash
+1
+2
+3
+4
+5
+6
 docker run --name postgres-multitenant \
   -e POSTGRES_DB=multitenant_auth \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=password \
   -p 5432:5432 \
   -d postgres:15
-```
+3. Build and Run
+bash
 
-### 3. Build and Run the Application
 
-```bash
-# Build the project
+1
+2
 mvn clean install
-
-# Run the application
 mvn spring-boot:run
-```
+Application starts at http://localhost:8080
 
-The application will start on `http://localhost:8080`
+Authentication Flow
+Step 1: Login with Email and Password
+http
 
-## 📚 API Documentation
 
-### Authentication Endpoints
-
-#### Register User
-```bash
-POST /auth/register
-Headers: 
-  Content-Type: application/json
-  X-Project-ID: your-project-id
-
-Body:
-{
-  "username": "john_doe",
-  "email": "john@example.com",
-  "password": "securepassword",
-  "firstName": "John",
-  "lastName": "Doe",
-  "projectId": "project1",
-  "role": "USER"
-}
-```
-
-#### Login User
-```bash
+1
+2
+3
+4
+5
+6
+7
+8
 POST /auth/login
-Headers:
-  Content-Type: application/json
-  X-Project-ID: your-project-id
+Content-Type: application/json
+X-Project-ID: projectA
 
-Body:
 {
-  "username": "john_doe",
-  "password": "securepassword"
+  "email": "user@example.com",
+  "password": "yourpassword"
 }
-```
+→ If credentials are valid, system generates and sends OTP (printed to console in dev).
 
-#### Get All Users (Tenant-specific)
-```bash
-GET /auth/users
-Headers:
-  X-Project-ID: your-project-id
-```
+Step 2: Verify OTP
+http
 
-#### Get User by ID
-```bash
-GET /auth/users/{userId}
-Headers:
-  X-Project-ID: your-project-id
-```
 
-### Project Management Endpoints
+1
+2
+3
+4
+5
+6
+7
+8
+POST /auth/verify-otp
+Content-Type: application/json
+X-Project-ID: projectA
 
-#### Get Project Users
-```bash
-GET /auth/projects/{projectId}/users
-Headers:
-  X-Project-ID: your-project-id
-```
+{
+  "email": "user@example.com",
+  "otp": "123456"
+}
+→ Returns temporary token on success. Replace with JWT in production.
 
-#### Add User to Project
-```bash
-POST /auth/projects/{projectId}/users/{userId}?role=ADMIN
-Headers:
-  X-Project-ID: your-project-id
-```
+API Endpoints
+Authentication
+POST
+/auth/register
+Register new user
+POST
+/auth/login
+Initiate login (sends OTP)
+POST
+/auth/verify-otp
+Verify OTP and complete login
 
-#### Health Check
-```bash
-GET /auth/health
-Headers:
-  X-Project-ID: your-project-id
-```
+User Management
+GET
+/auth/users
+List all users in tenant
+GET
+/auth/users/{id}
+Get user by ID
 
-## 🧪 Testing the Multi-Tenancy
+Project Management
+GET
+/auth/projects/{id}/users
+List users in project
+POST
+/auth/projects/{id}/users/{userId}
+Add user to project
 
-### Test Tenant Isolation
+Configuration
+Tenant Identification
+Use header X-Project-ID to specify tenant. Example:
 
-```bash
-# 1. Register user in Project A
-curl -X POST http://localhost:8080/auth/register \
-  -H "Content-Type: application/json" \
-  -H "X-Project-ID: projectA" \
-  -d '{
-    "username": "testuser",
-    "email": "test@projecta.com",
-    "password": "password123",
-    "firstName": "Test",
-    "lastName": "User"
-  }'
+http
 
-# 2. Register same username in Project B (should work due to isolation)
-curl -X POST http://localhost:8080/auth/register \
-  -H "Content-Type: application/json" \
-  -H "X-Project-ID: projectB" \
-  -d '{
-    "username": "testuser",
-    "email": "test@projectb.com",
-    "password": "differentpass",
-    "firstName": "Test",
-    "lastName": "UserB"
-  }'
 
-# 3. Login to Project A
-curl -X POST http://localhost:8080/auth/login \
-  -H "Content-Type: application/json" \
-  -H "X-Project-ID: projectA" \
-  -d '{
-    "username": "testuser",
-    "password": "password123"
-  }'
+1
+X-Project-ID: acme
+If omitted, defaults to public schema.
 
-# 4. Try to login to Project B with Project A password (should fail)
-curl -X POST http://localhost:8080/auth/login \
-  -H "Content-Type: application/json" \
-  -H "X-Project-ID: projectB" \
-  -d '{
-    "username": "testuser",
-    "password": "password123"
-  }'
+Password Hashing
+Argon2id is used with parameters:
 
-# 5. Get users from each project (should show different results)
-curl -X GET http://localhost:8080/auth/users -H "X-Project-ID: projectA"
-curl -X GET http://localhost:8080/auth/users -H "X-Project-ID: projectB"
-```
+Memory: 64 MB
+Iterations: 3
+Parallelism: 1
+Hash length: 32 bytes
+Adjust in Argon2PasswordEncoder.java if needed.
 
-## 📊 Database Schema Verification
+Email OTP (Development)
+OTP is printed to console. In production, integrate with SMTP service (JavaMailSender, SendGrid, etc.).
 
-Connect to PostgreSQL to verify schema creation:
+Project Structure
 
-```bash
-# Connect to database
-docker exec -it postgres-multitenant psql -U postgres -d multitenant_auth
 
-# List all schemas
-\dn
-
-# You should see schemas like: public, projectA, projectB, etc.
-
-# Check tables in a specific schema
-\dt "projectA".*
-
-# View data
-SELECT * FROM "projectA".users;
-SELECT * FROM "projectA".project_users;
-```
-
-## ⚙️ Configuration
-
-### Application Properties
-The system uses `application.yml` for configuration:
-
-```yaml
-spring:
-  application:
-    name: auth
-  datasource:
-    url: jdbc:postgresql://localhost:5432/multitenant_auth
-    username: postgres
-    password: password
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        multiTenancy: SCHEMA
-        tenant_identifier_resolver: dev.gauravgughane.code.auth.config.CurrentTenantIdentifierResolver
-        multi_tenant_connection_provider: dev.gauravgughane.code.auth.config.MultiTenantConnectionProvider
-
-server:
-  port: 8080
-```
-
-### Tenant Headers
-The system supports multiple ways to specify tenants:
-- `X-Tenant-ID`: Basic tenant identification
-- `X-Project-ID`: Project-based tenant identification (takes precedence)
-
-If no header is provided, the system defaults to the `public` schema.
-
-## 📁 Project Structure
-
-```
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
 src/
 ├── main/
 │   ├── java/dev/gauravgughane/code/auth/
-│   │   ├── AuthApplication.java
 │   │   ├── config/
-│   │   │   ├── TenantContext.java
-│   │   │   ├── TenantFilter.java
+│   │   │   ├── Argon2PasswordEncoder.java
 │   │   │   ├── CurrentTenantIdentifierResolver.java
 │   │   │   ├── MultiTenantConnectionProvider.java
-│   │   │   └── SecurityConfig.java
+│   │   │   ├── SecurityConfig.java
+│   │   │   ├── TenantContext.java
+│   │   │   └── TenantFilter.java
+│   │   ├── controller/
+│   │   │   └── AuthController.java
+│   │   ├── dto/
+│   │   │   ├── AuthRequest.java
+│   │   │   └── AuthResponse.java
 │   │   ├── entity/
 │   │   │   ├── BaseUser.java
 │   │   │   └── ProjectUser.java
 │   │   ├── repository/
 │   │   │   ├── BaseUserRepository.java
 │   │   │   └── ProjectUserRepository.java
-│   │   ├── service/
-│   │   │   ├── UserService.java
-│   │   │   └── ProjectUserService.java
-│   │   ├── controller/
-│   │   │   └── AuthController.java
-│   │   └── dto/
-│   │       ├── AuthRequest.java
-│   │       └── AuthResponse.java
+│   │   └── service/
+│   │       ├── EmailService.java
+│   │       ├── UserService.java
+│   │       └── ProjectUserService.java
 │   └── resources/
 │       └── application.yml
 └── test/
-    └── java/
-        └── (test classes)
-```
+    └── java/...
+Testing Multi-Tenancy
+Register same email in two tenants — should succeed due to schema isolation.
 
-## 🚨 Troubleshooting
+bash
 
-### Common Issues
 
-1. **Application won't start**
-   - Check if PostgreSQL is running: `docker ps`
-   - Verify port 8080 is available: `lsof -i :8080`
-   - Check database connection settings in `application.yml`
+1
+2
+3
+4
+5
+6
+7
+8
+9
+curl -X POST http://localhost:8080/auth/register \
+  -H "Content-Type: application/json" \
+  -H "X-Project-ID: projectA" \
+  -d '{"email":"test@example.com", "password":"pass1", ...}'
 
-2. **Schema not created**
-   - Enable SQL logging to see schema creation statements
-   - Check application logs for Hibernate multi-tenancy initialization
-
-3. **Tenant isolation not working**
-   - Verify HTTP headers are being sent correctly
-   - Check `TenantFilter` logs to ensure tenant context is set
-   - Confirm schema switching in database logs
-
-4. **Maven build fails**
-   - Ensure Java 17 is installed: `java -version`
-   - Clean Maven cache: `mvn clean install -U`
-   - Check Lombok plugin is enabled in your IDE
-
-### Enable Debug Logging
-
-Add to `application.yml`:
-```yaml
-logging:
-  level:
-    dev.gauravgughane.code.auth: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.springframework.security: DEBUG
-```
-
-## 🔒 Security Features
-
-- **Password Encryption**: BCrypt with configurable strength
-- **SQL Injection Protection**: JPA/Hibernate parameterized queries
-- **CSRF Protection**: Disabled for stateless API (can be enabled)
-- **Input Validation**: Jakarta validation annotations
-- **Schema Isolation**: Complete data separation between tenants
-
-## 🚀 Performance Considerations
-
-- Connection pooling configured via Spring Boot defaults
-- Schema-per-tenant provides better isolation than shared schemas
-- Indexes automatically created by Hibernate DDL
-- Consider connection pool sizing for high-tenant scenarios
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the BSD-3-Clause License - see the [LICENSE](LICENSE) file for details.
-
-### BSD-3-Clause License Summary
-- ✅ Commercial use
-- ✅ Modification  
-- ✅ Distribution
-- ✅ Private use
-- ❌ Liability
-- ❌ Warranty
-
-## 📞 Support
-
-If you encounter any issues or have questions:
-
-1. Check the [Troubleshooting](#-troubleshooting) section
-2. Review the application logs
-3. Open an issue on GitHub with:
-   - Error message
-   - Steps to reproduce
-   - Environment details (Java version, OS, etc.)
-
-## 🙏 Acknowledgments
-
-- Spring Boot team for the excellent framework
-- Hibernate team for multi-tenancy support
-- PostgreSQL community for the robust database
-
----
-
-**⭐ If this project helps you, please consider giving it a star!**
+curl -X POST http://localhost:8080/auth/register \
+  -H "Content-Type: application/json" \
+  -H "X-Project-ID: projectB" \
+  -d '{"email":"test@example.com", "password":"pass2", ...}'
+Security
+Passwords hashed with Argon2id
+Schema isolation prevents cross-tenant data leaks
+Stateless design avoids session fixation attacks
+Input validation via Jakarta Bean Validation
+License
+BSD-3-Clause
