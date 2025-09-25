@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | User Management</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Michroma', sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(30, 30, 30, 0.8);
+            padding: 2rem;
+            border-radius: 12px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .user-info {
+            background: rgba(20, 20, 20, 0.5);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+        .users-table th,
+        .users-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        .users-table th {
+            background: rgba(20, 20, 20, 0.7);
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+        }
+        .nav-link {
+            color: #10b981;
+            text-decoration: none;
+            margin-right: 1rem;
+        }
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Admin Dashboard</h1>
+        <div>
+            <a href="/dashboard.html" class="nav-link">User Dashboard</a>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="user-info">
+        <h2>Users in Your Tenant</h2>
+        <p>Tenant: <span id="tenant-id">Loading...</span></p>
+    </div>
+
+    <div id="users-list">
+        <div class="loading">Loading users...</div>
+    </div>
+</div>
+
+<script>
+
+
+    // For fetching users
+async function fetchAllUsers() {
+    try {
+        const response = await fetch('/api/admin/users', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Project-ID': 'your-tenant-id', // REQUIRED for multi-tenant
+                // Add authorization header if needed
+                // 'Authorization': 'Bearer ' + token
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const users = await response.json();
+        console.log('Users loaded:', users);
+        return users;
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+    }
+}
+
+// Usage in your admin dashboard
+fetchAllUsers()
+    .then(users => {
+        // Update your UI with the users data
+        displayUsers(users);
+    })
+    .catch(error => {
+        // Handle error in UI
+        showError('Failed to load users: ' + error.message);
+    });
+
+
+
+     // Check if user is logged in
+     const token = localStorage.getItem('authToken');
+     const tenantId = localStorage.getItem('tenantId');
+
+     if (!token) {
+         window.location.href = '/gui.html';
+     }
+
+     document.getElementById('tenant-id').textContent = tenantId;
+
+     // Load all users in tenant
+     fetch('/api/admin/users', {
+         headers: {
+             'Authorization': `Bearer ${token}`
+         }
+     })
+     .then(res => res.json())
+     .then(users => {
+         const container = document.getElementById('users-list');
+         if (users.length === 0) {
+             container.innerHTML = '<p>No users found in this tenant.</p>';
+             return;
+         }
+
+         let table = '<table class="users-table"><thead><tr><th>ID</th><th>Name</th><th>Email</th></tr></thead><tbody>';
+         users.forEach(user => {
+             table += `<tr>
+                 <td>${user.id}</td>
+                 <td>${user.name || 'N/A'}</td>
+                 <td>${user.email || 'N/A'}</td>
+             </tr>`;
+         });
+         table += '</tbody></table>';
+         container.innerHTML = table;
+     })
+     .catch(err => {
+         document.getElementById('users-list').innerHTML = '<p>Error loading users.</p>';
+     });
+
+     function logout() {
+         localStorage.removeItem('authToken');
+         localStorage.removeItem('tenantId');
+         window.location.href = '/gui.html';
+     }
+</script>
+</body>
+</html>

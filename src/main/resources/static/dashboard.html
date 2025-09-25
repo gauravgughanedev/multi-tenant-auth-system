@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Gaurav Gughane</title>
+    <style>
+
+        <div>
+           <a href="/admin-dashboard.html" class="nav-link">Admin Dashboard</a>
+           <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Michroma', sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(30, 30, 30, 0.8);
+            padding: 2rem;
+            border-radius: 12px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .user-info {
+            background: rgba(20, 20, 20, 0.5);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+    </style>
+
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Dashboard</h1>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="user-info">
+        <h2>Welcome, <span id="user-name">Loading...</span></h2>
+        <p>Email: <span id="user-email">Loading...</span></p>
+        <p>Tenant: <span id="tenant-id">Loading...</span></p>
+    </div>
+</div>
+
+<script>
+
+     // Check if user is logged in
+     const token = localStorage.getItem('authToken');
+     const tenantId = localStorage.getItem('tenantId');
+
+     if (!token) {
+         window.location.href = '/gui.html';
+     }
+
+     // Load user profile info
+     document.getElementById('user-name').textContent = 'John Doe';
+     document.getElementById('user-email').textContent = 'john@acme.com';
+     document.getElementById('tenant-id').textContent = tenantId;
+
+     // Load users list (this will use the JWT filter)
+     fetch('/api/users', {
+         headers: {
+             'Authorization': `Bearer ${token}`
+         }
+     })
+     .then(res => res.json())
+     .then(users => {
+         const container = document.getElementById('users-list');
+         if (users.length === 0) {
+             container.innerHTML = '<p>No users found in this tenant.</p>';
+             return;
+         }
+
+         let table = '<table class="users-table"><thead><tr><th>Name</th><th>Email</th><th>ID</th></tr></thead><tbody>';
+         users.forEach(user => {
+             table += `<tr>
+                 <td>${user.name || 'N/A'}</td>
+                 <td>${user.email || 'N/A'}</td>
+                 <td>${user.id || 'N/A'}</td>
+             </tr>`;
+         });
+         table += '</tbody></table>';
+         container.innerHTML = table;
+     })
+     .catch(err => {
+         document.getElementById('users-list').innerHTML = '<p>Error loading users.</p>';
+     });
+
+     function logout() {
+         localStorage.removeItem('authToken');
+         localStorage.removeItem('tenantId');
+         window.location.href = '/gui.html';
+     }
+</script>
+</body>
+</html>

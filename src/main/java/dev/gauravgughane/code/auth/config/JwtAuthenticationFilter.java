@@ -1,0 +1,74 @@
+package dev.gauravgughane.code.auth.config;
+
+import dev.gauravgughane.code.auth.service.JwtService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Override
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
+
+        // Skip filter for auth endpoints
+        if (request.getServletPath().contains("/api/auth")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        final String authHeader = request.getHeader("Authorization");
+        final String jwt;
+        final String userId;
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        jwt = authHeader.substring(7); // Remove "Bearer "
+
+        try {
+            userId = jwtService.extractUserId(jwt);
+            String tenantId = jwtService.extractTenantId(jwt);
+
+            if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                if (jwtService.validateToken(jwt, userId)) {
+                    // Set tenant context from token
+                    TenantContext.setTenantId(tenantId);
+
+                    // Optional: Set Spring Security auth (for @PreAuthorize)
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userId,
+                            null,
+                            null // Add authorities if needed
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("JWT validation failed", e);
+        } finally {
+            filterChain.doFilter(request, response);
+            TenantContext.clear(); // Always clear after request
+        }
+    }
+}
