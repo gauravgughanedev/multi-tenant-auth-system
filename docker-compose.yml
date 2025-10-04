@@ -17,9 +17,9 @@ services:
     networks:
       - app_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-multitenant}"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 5
       start_period: 10s
     restart: unless-stopped
@@ -50,19 +50,30 @@ services:
     container_name: multitenant_api
     environment:
       # Database Configuration
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-multitenant}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-multitenant}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      
+      # Hibernate Configuration
+      DDL_AUTO: ${DDL_AUTO:-validate}
+      SHOW_SQL: ${SHOW_SQL:-false}
+      LOG_SQL: ${LOG_SQL:-INFO}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       
       # JWT Configuration
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       
+      # Server Configuration
+      SERVER_PORT: 8080
+      
       # Spring Configuration
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE:-prod}
       
       # JVM Options
-      JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx512m}
+      JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx512m -XX:+UseG1GC}
     ports:
       - "${API_PORT:-8080}:8080"
     networks:
@@ -75,7 +86,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
     restart: unless-stopped
 
 volumes:
