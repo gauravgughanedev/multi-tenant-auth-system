@@ -8,7 +8,7 @@ public class GuiController {
 
     @GetMapping("/")
     public String home() {
-        return "redirect:/gui.html";
+        return "redirect:/login.html";
     }
     
 }
