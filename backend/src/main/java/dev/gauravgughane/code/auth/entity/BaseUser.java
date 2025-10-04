@@ -14,7 +14,7 @@ public class BaseUser {
     private String name;
     private String email;
 
-    @Column(name = "password_hash") // ✅ Field name used in UserService.checkPassword
+    @Column(name = "password_hash") //Field name used in UserService.checkPassword
     private String passwordHash;
 
     // Constructors
@@ -26,7 +26,7 @@ public class BaseUser {
         this.passwordHash = passwordHash;
     }
 
-    // Getters & Setters - ✅ These are CRUCIAL for UserService to work
+    // Getters & Setters -These are CRUCIAL for UserService to work
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -36,6 +36,6 @@ public class BaseUser {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
-    public String getPasswordHash() { return passwordHash; } // ✅ Used in checkPassword
+    public String getPasswordHash() { return passwordHash; } //Used in checkPassword
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 }

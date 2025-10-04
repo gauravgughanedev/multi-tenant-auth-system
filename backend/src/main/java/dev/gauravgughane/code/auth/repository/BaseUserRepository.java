@@ -10,5 +10,5 @@ import java.util.UUID;
 @Repository
 public interface BaseUserRepository extends JpaRepository<BaseUser, UUID> {
     Optional<BaseUser> findByEmail(String email); // This method is used by UserService
-    // JpaRepository provides save() and findAll() automatically
+    
 }
