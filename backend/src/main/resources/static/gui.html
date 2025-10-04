@@ -3,25 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Gaurav Gughane</title>
+    <title>Login | Multi-Tenant Auth</title>
     <link rel="icon" href="/favicon.ico" />
     <style>
-        /* ========== Load Custom Font ========== */
-        /* Ensure Michroma font is accessible or use a fallback */
         @font-face {
             font-family: 'Michroma';
-            src: url('Michroma-Regular.ttf') format('truetype'); /* Check path */
+            src: url('Michroma-Regular.ttf') format('truetype');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
         }
 
-        /* ========== Base ========== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
             height: 100%;
             font-family: 'Michroma', sans-serif;
-            background-color: #000;
+            background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
             color: #fff;
         }
         body {
@@ -31,42 +28,46 @@
             padding: 1rem;
         }
 
-        /* ========== Login Container ========== */
         .auth-container {
-            background: rgba(30, 30, 30, 0.8); /* Slightly lighter dark background */
+            background: rgba(30, 30, 30, 0.9);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 2rem;
+            border-radius: 16px;
+            padding: 2.5rem;
             width: 100%;
-            max-width: 400px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            max-width: 420px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
         }
 
         .auth-title {
             text-align: center;
-            margin-bottom: 1.5rem;
-            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            font-size: 2rem;
             font-weight: 400;
             color: #fff;
+            background: linear-gradient(45deg, #10b981, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .form-group {
-            margin-bottom: 1.2rem;
+            margin-bottom: 1.5rem;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.5rem;
             font-size: 0.9rem;
             color: #d1d5db;
         }
 
         .form-input {
             width: 100%;
-            padding: 0.7rem;
-            border-radius: 6px;
+            padding: 0.8rem;
+            border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.15);
-            background: rgba(20, 20, 20, 0.5);
+            background: rgba(20, 20, 20, 0.7);
             color: #fff;
             font-family: inherit;
             font-size: 1rem;
@@ -74,29 +75,30 @@
         .form-input:focus {
             outline: none;
             border-color: #10b981;
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
         }
 
         .form-button {
             width: 100%;
-            padding: 0.75rem;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: transparent;
+            padding: 0.9rem;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(45deg, #10b981, #059669);
             color: #fff;
             font-family: inherit;
             font-size: 1rem;
-            font-weight: 400;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             margin-top: 0.5rem;
         }
         .form-button:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.5);
+            background: linear-gradient(45deg, #059669, #047857);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
         .form-button:active {
-            transform: translateY(1px);
+            transform: translateY(0);
         }
 
         .auth-switch {
@@ -116,62 +118,49 @@
         }
 
         .toggle-form {
-             display: none; /* Hidden by default, JS will toggle */
+            display: none;
         }
 
-        /* ========== Response Message ========== */
         .response-message {
             margin-top: 1rem;
-            padding: 0.75rem;
-            border-radius: 6px;
+            padding: 0.8rem;
+            border-radius: 8px;
             text-align: center;
             font-size: 0.9rem;
         }
         .response-success {
-            background: rgba(16, 185, 129, 0.1);
+            background: rgba(16, 185, 129, 0.15);
             border: 1px solid #10b981;
             color: #6ee7b7;
         }
         .response-error {
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(239, 68, 68, 0.15);
             border: 1px solid #ef4444;
             color: #fca5a5;
         }
 
-        /* ========== Tenant Input ========== */
-        .tenant-input {
-            margin-bottom: 1rem;
-        }
-
-        /* ========== Responsive ========== */
         @media (max-width: 480px) {
             .auth-container {
                 padding: 1.5rem;
             }
             .auth-title {
-                font-size: 1.5rem;
+                font-size: 1.7rem;
             }
         }
     </style>
 </head>
 <body>
 <div class="auth-container">
-    <!-- Tenant Input -->
-    <div class="tenant-input">
-        <label for="tenant-id" class="form-label">Tenant ID</label>
-        <input type="text" id="tenant-id" class="form-input" value="acme" placeholder="e.g., acme, beta">
-    </div>
-
     <!-- Login Form -->
     <form id="login-form" class="auth-form">
-        <h2 class="auth-title">Login</h2>
+        <h2 class="auth-title">Welcome Back</h2>
         <div class="form-group">
             <label for="login-email" class="form-label">Email</label>
-            <input type="email" id="login-email" class="form-input" required>
+            <input type="email" id="login-email" class="form-input" required placeholder="your@email.com">
         </div>
         <div class="form-group">
             <label for="login-password" class="form-label">Password</label>
-            <input type="password" id="login-password" class="form-input" required>
+            <input type="password" id="login-password" class="form-input" required placeholder="••••••••">
         </div>
         <button type="submit" class="form-button">Login</button>
         <div id="login-response" class="response-message" style="display:none;"></div>
@@ -180,24 +169,24 @@
         </div>
     </form>
 
-    <!-- Signup Form (Initially Hidden) -->
+    <!-- Signup Form -->
     <form id="signup-form" class="auth-form toggle-form">
-        <h2 class="auth-title">Sign Up</h2>
+        <h2 class="auth-title">Create Account</h2>
         <div class="form-group">
             <label for="signup-name" class="form-label">Full Name</label>
-            <input type="text" id="signup-name" class="form-input" required>
+            <input type="text" id="signup-name" class="form-input" required placeholder="Gaurav Gughane">
         </div>
         <div class="form-group">
             <label for="signup-email" class="form-label">Email</label>
-            <input type="email" id="signup-email" class="form-input" required>
+            <input type="email" id="signup-email" class="form-input" required placeholder="your@email.com">
         </div>
         <div class="form-group">
             <label for="signup-password" class="form-label">Password</label>
-            <input type="password" id="signup-password" class="form-input" required>
+            <input type="password" id="signup-password" class="form-input" required placeholder="••••••••">
         </div>
         <div class="form-group">
             <label for="signup-confirm-password" class="form-label">Confirm Password</label>
-            <input type="password" id="signup-confirm-password" class="form-input" required>
+            <input type="password" id="signup-confirm-password" class="form-input" required placeholder="••••••••">
         </div>
         <button type="submit" class="form-button">Sign Up</button>
         <div id="signup-response" class="response-message" style="display:none;"></div>
@@ -213,99 +202,78 @@
         const signupForm = document.getElementById('signup-form');
         const showSignupLink = document.getElementById('show-signup');
         const showLoginLink = document.getElementById('show-login');
-        const tenantInput = document.getElementById('tenant-id');
 
-        // Show Signup Form
+        // Form switching
         showSignupLink.addEventListener('click', function(e) {
             e.preventDefault();
             loginForm.classList.add('toggle-form');
             signupForm.classList.remove('toggle-form');
         });
 
-        // Show Login Form
         showLoginLink.addEventListener('click', function(e) {
             e.preventDefault();
             signupForm.classList.add('toggle-form');
             loginForm.classList.remove('toggle-form');
         });
 
-        // Login Form Submission
-loginForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    const tenantId = tenantInput.value.trim();
+        // Login submission
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
 
-    if (!tenantId) {
-        showMessage('login-response', 'Please enter Tenant ID', 'error');
-        return;
-    }
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.token) {
+                    localStorage.setItem('authToken', data.token);
+                    showMessage('login-response', 'Login successful! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/dashboard.html';
+                    }, 1000);
+                } else {
+                    showMessage('login-response', data.message || 'Login failed', 'error');
+                }
+            })
+            .catch(err => {
+                showMessage('login-response', 'Network error. Try again.', 'error');
+            });
+        });
 
-    // Login API call
-    fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Tenant-ID': tenantId
-        },
-        body: JSON.stringify({ email, password })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.token) {
-            // Save token to localStorage
-            localStorage.setItem('authToken', data.token);
-            localStorage.setItem('tenantId', tenantId);
-
-            // Show success message
-            showMessage('login-response', '✅ Login successful! Redirecting...', 'success');
-
-            // Redirect to dashboard after 1 second
-            setTimeout(() => {
-                window.location.href = '/dashboard.html';
-            }, 1000);
-        } else {
-            showMessage('login-response', data.message || 'Login failed', 'error');
-        }
-    })
-    .catch(err => {
-        showMessage('login-response', 'Network error. Try again.', 'error');
-    });
-});
-
-        // Signup Form Submission
+        // Signup submission
         signupForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const name = document.getElementById('signup-name').value;
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
             const confirmPassword = document.getElementById('signup-confirm-password').value;
-            const tenantId = tenantInput.value.trim();
 
             if (password !== confirmPassword) {
                 showMessage('signup-response', 'Passwords do not match!', 'error');
                 return;
             }
 
-            if (!tenantId) {
-                showMessage('signup-response', 'Please enter Tenant ID', 'error');
-                return;
-            }
-
-            // Simulate backend call
             fetch('/api/auth/register', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-Tenant-ID': tenantId
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ name, email, password })
             })
             .then(res => res.json())
             .then(data => {
                 if (data.id) {
-                    showMessage('signup-response', '✅ Account created!', 'success');
-                    // In real app: auto-login or redirect
+                    showMessage('signup-response', 'Account created! Please login.', 'success');
+                    setTimeout(() => {
+                        signupForm.classList.add('toggle-form');
+                        loginForm.classList.remove('toggle-form');
+                    }, 2000);
                 } else {
                     showMessage('signup-response', data.message || 'Signup failed', 'error');
                 }
@@ -315,12 +283,15 @@ loginForm.addEventListener('submit', function(e) {
             });
         });
 
-        // Show message helper
         function showMessage(elementId, text, type) {
             const el = document.getElementById(elementId);
             el.textContent = text;
             el.className = 'response-message response-' + type;
             el.style.display = 'block';
+            
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 5000);
         }
     });
 </script>
