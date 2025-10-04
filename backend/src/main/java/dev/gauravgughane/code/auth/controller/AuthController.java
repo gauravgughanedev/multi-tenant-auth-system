@@ -1,11 +1,10 @@
 package dev.gauravgughane.code.auth.controller;
 
-// Correct imports
-import dev.gauravgughane.code.auth.config.TenantContext;
 import dev.gauravgughane.code.auth.dto.AuthRequest;
 import dev.gauravgughane.code.auth.entity.BaseUser;
+import dev.gauravgughane.code.auth.entity.UserRole;
 import dev.gauravgughane.code.auth.service.JwtService;
-import dev.gauravgughane.code.auth.service.UserService; // ✅ Correct import
+import dev.gauravgughane.code.auth.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +17,6 @@ import java.util.Optional;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    // ✅ Corrected: Use 'UserService userService', not 'UserService.UserService userService'
     @Autowired
     private UserService userService;
 
@@ -52,11 +50,12 @@ public class AuthController {
         if (userOpt.isPresent()) {
             BaseUser user = userOpt.get();
             if (userService.checkPassword(user, request.getPassword())) {
-                // Get tenant ID from TenantContext (set by TenantFilter)
-                String tenantId = TenantContext.getTenantId();
-
-                // Generate JWT token
-                String token = jwtService.generateToken(user.getId().toString(), tenantId);
+                String tenantId = "public";
+                String token = jwtService.generateToken(
+                    user.getId().toString(), 
+                    tenantId, 
+                    user.getRole()
+                );
 
                 Map<String, Object> response = new HashMap<>();
                 response.put("token", token);
@@ -64,7 +63,8 @@ public class AuthController {
                 response.put("user", Map.of(
                         "id", user.getId(),
                         "name", user.getName(),
-                        "email", user.getEmail()
+                        "email", user.getEmail(),
+                        "role", user.getRole()
                 ));
                 return ResponseEntity.ok(response);
             }

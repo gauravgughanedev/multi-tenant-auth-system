@@ -1,40 +1,88 @@
 package dev.gauravgughane.code.auth.service;
 
 import dev.gauravgughane.code.auth.entity.BaseUser;
-import dev.gauravgughane.code.auth.repository.UserRepository;
-import dev.gauravgughane.code.auth.interceptor.TenantInterceptor;
+import dev.gauravgughane.code.auth.repository.BaseUserRepository;
+import dev.gauravgughane.code.auth.config.TenantContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
 
     @Autowired
-    private UserRepository userRepository;
+    private BaseUserRepository userRepository;
 
-    public List<BaseUser> findAllUsers() {
-        String currentTenant = TenantInterceptor.getCurrentTenant();
-        System.out.println("Current tenant in UserService: " + currentTenant);
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
-        if (currentTenant == null) {
-            throw new RuntimeException("No tenant context available");
+    @Autowired
+    private DataSource dataSource;
+
+    public BaseUser registerUser(String name, String email, String password) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new RuntimeException("User with email " + email + " already exists");
         }
 
-        try {
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId != null && !tenantId.equals("public") && !tenantSchemaExists(tenantId)) {
+            createTenantSchema(tenantId);
+        }
 
-            List<BaseUser> users = userRepository.findAll();
-            System.out.println("Found " + users.size() + " users for tenant: " + currentTenant);
+        String hashedPassword = passwordEncoder.encode(password);
+        BaseUser user = new BaseUser(name, email, hashedPassword);
+        return userRepository.save(user);
+    }
 
-            users.forEach(user -> {
-                System.out.println("User: " + user.getEmail() + " (ID: " + user.getId() + ")");
-            });
+    public Optional<BaseUser> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 
-            return users;
-        } catch (Exception e) {
-            System.err.println("Error in findAllUsers for tenant " + currentTenant + ": " + e.getMessage());
-            throw e;
+    public boolean checkPassword(BaseUser user, String rawPassword) {
+        return passwordEncoder.matches(rawPassword, user.getPasswordHash());
+    }
+
+    public List<BaseUser> findAll() {
+        return userRepository.findAll();
+    }
+
+    public List<BaseUser> findAllUsers() {
+        return findAll();
+    }
+
+    private void createTenantSchema(String tenantId) {
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            
+            String schemaName = "tenant_" + tenantId.toLowerCase();
+            stmt.execute("CREATE SCHEMA IF NOT EXISTS " + schemaName);
+            
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to create tenant schema: " + e.getMessage(), e);
+        }
+    }
+
+    private boolean tenantSchemaExists(String tenantId) {
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            
+            String schemaName = "tenant_" + tenantId.toLowerCase();
+            var rs = stmt.executeQuery(
+                "SELECT schema_name FROM information_schema.schemata WHERE schema_name = '" + 
+                schemaName + "'"
+            );
+            return rs.next();
+            
+        } catch (SQLException e) {
+            return false;
         }
     }
 }

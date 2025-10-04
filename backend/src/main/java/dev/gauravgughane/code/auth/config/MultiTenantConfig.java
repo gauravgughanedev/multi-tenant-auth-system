@@ -18,8 +18,8 @@ public class MultiTenantConfig {
 
     @Bean
     @Primary
-    public AbstractDataSourceBasedMultiTenantConnectionProviderImpl<String> multiTenantConnectionProvider() {
-        return new AbstractDataSourceBasedMultiTenantConnectionProviderImpl<String>() {
+    public AbstractDataSourceBasedMultiTenantConnectionProviderImpl multiTenantConnectionProvider() {
+        return new AbstractDataSourceBasedMultiTenantConnectionProviderImpl() {
             @Override
             protected DataSource selectAnyDataSource() {
                 return dataSource;
@@ -28,22 +28,6 @@ public class MultiTenantConfig {
             @Override
             protected DataSource selectDataSource(String tenantIdentifier) {
                 return dataSource;
-            }
-
-            @Override
-            public Connection getConnection(String tenantIdentifier) throws SQLException {
-                final Connection connection = dataSource.getConnection();
-                connection.createStatement().execute("SET search_path TO " + tenantIdentifier);
-                return connection;
-            }
-
-            @Override
-            public void releaseConnection(String tenantIdentifier, Connection connection) throws SQLException {
-                try {
-                    connection.createStatement().execute("SET search_path TO public");
-                } finally {
-                    connection.close();
-                }
             }
         };
     }

@@ -1,9 +1,9 @@
 package dev.gauravgughane.code.auth.service;
 
+import dev.gauravgughane.code.auth.entity.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
 
@@ -17,12 +17,17 @@ import java.util.function.Function;
 public class JwtService {
 
     private final SecretKey SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long JWT_EXPIRATION = 1000 * 60 * 60; // 1 hour
+    private final long JWT_EXPIRATION = 1000 * 60 * 60;
 
-    public String generateToken(String userId, String tenantId) {
+    public String generateToken(String userId, String tenantId, UserRole role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("tenantId", tenantId);
+        claims.put("role", role.toString());
         return createToken(claims, userId);
+    }
+
+    public String generateToken(String userId, String tenantId) {
+        return generateToken(userId, tenantId, UserRole.USER);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
@@ -31,7 +36,7 @@ public class JwtService {
                 .subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
-                .signWith(SECRET_KEY) // Pass the SecretKey directly
+                .signWith(SECRET_KEY)
                 .compact();
     }
 
@@ -40,9 +45,14 @@ public class JwtService {
     }
 
     public String extractTenantId(String token) {
-        // Extract claims map and get tenantId
         Claims claims = extractAllClaims(token);
         return (String) claims.get("tenantId");
+    }
+
+    public UserRole extractRole(String token) {
+        Claims claims = extractAllClaims(token);
+        String roleStr = (String) claims.get("role");
+        return roleStr != null ? UserRole.valueOf(roleStr) : UserRole.USER;
     }
 
     public Date extractExpiration(String token) {
@@ -55,19 +65,17 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        // Use parserBuilder() and setSigningKey() with SecretKey in 0.12.x
         return Jwts.parser()
-                .verifyWith(SECRET_KEY) // Use .verifyWith() in 0.12.x
+                .verifyWith(SECRET_KEY)
                 .build()
-                .parseSignedClaims(token) // Use .parseSignedClaims() in 0.12.x
-                .getPayload(); // Get the Claims payload
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
-    // Optional: Add validation against a known user ID
     public Boolean validateToken(String token, String userId) {
         final String extractedUserId = extractUserId(token);
         return (extractedUserId.equals(userId) && !isTokenExpired(token));
