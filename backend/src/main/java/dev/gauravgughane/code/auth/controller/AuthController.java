@@ -2,7 +2,6 @@ package dev.gauravgughane.code.auth.controller;
 
 import dev.gauravgughane.code.auth.dto.AuthRequest;
 import dev.gauravgughane.code.auth.entity.BaseUser;
-import dev.gauravgughane.code.auth.entity.UserRole;
 import dev.gauravgughane.code.auth.service.JwtService;
 import dev.gauravgughane.code.auth.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,11 +50,7 @@ public class AuthController {
             BaseUser user = userOpt.get();
             if (userService.checkPassword(user, request.getPassword())) {
                 String tenantId = "public";
-                String token = jwtService.generateToken(
-                    user.getId().toString(), 
-                    tenantId, 
-                    user.getRole()
-                );
+                String token = jwtService.generateToken(user.getId().toString(), tenantId);
 
                 Map<String, Object> response = new HashMap<>();
                 response.put("token", token);
@@ -63,8 +58,7 @@ public class AuthController {
                 response.put("user", Map.of(
                         "id", user.getId(),
                         "name", user.getName(),
-                        "email", user.getEmail(),
-                        "role", user.getRole()
+                        "email", user.getEmail()
                 ));
                 return ResponseEntity.ok(response);
             }
